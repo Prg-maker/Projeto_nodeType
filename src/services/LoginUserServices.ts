@@ -1,4 +1,5 @@
 import {prismaClient} from '../prisma'
+import  {sign} from 'jsonwebtoken'
 
 interface Props {
   user:{
@@ -12,7 +13,6 @@ interface Props {
 class LoginUserServices{
   async execute({user}:Props){
     const {emailUser , nameUser , passwordUser} = user
-    console.log(emailUser)
 
     const verifyUser = await prismaClient.user.findFirst({
       where:{
@@ -24,18 +24,25 @@ class LoginUserServices{
 
     if(!verifyUser){
       return "User not exist"
-    }else{
-      const user = await prismaClient.user.create({
-        data:{
-          name: nameUser,
-          email: emailUser,
-          password: passwordUser
-        }
-      })
     }
 
+    const token = sign({
+      user:{
+        id: verifyUser.id,
+        name: verifyUser.name,
+        email: verifyUser.email,
+        password:verifyUser.password
+      }
+    }, 
+      'a98e655b17c7e481ea7ce4a72e28d86b',
+      {
+        subject: verifyUser.id,
+        expiresIn: "1d"
+      }
+    ) 
 
-    return verifyUser
+
+    return {token , verifyUser}
 
   }
 }
